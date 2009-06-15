@@ -17,14 +17,14 @@ module Cloudquery
     :indexes => "i".freeze,
     :documents => "i".freeze,
   }.freeze
-  
+
   # Standard Content-Types for requests
   CONTENT_TYPES = {
     :json => 'application/json;charset=utf-8'.freeze,
     :form => 'application/x-www-form-urlencoded'.freeze,
     :xml  => 'application/xml;charset=utf-8'.freeze,
   }.freeze
-  
+
 
   SIGNING_METHOD = "SHA1".freeze
   COOKIE_JAR = ".cookies.lwp".freeze
@@ -45,7 +45,7 @@ module Cloudquery
         @method = 'POST'
       end
       @body = options[:body]
-      
+
       @account = options[:account]
       @secret = options[:secret]
     end
@@ -130,7 +130,7 @@ module Cloudquery
     #
     # It's highly recommended to set options <tt>:account</tt>
     # and <tt>:secret</tt>. Creating a client without an account
-    # and secret isn't very useful. 
+    # and secret isn't very useful.
     #
     # ==== Acceptable options:
     #   :account => <account name> (default => nil)
@@ -146,18 +146,18 @@ module Cloudquery
       # unless options[:account] && options[:secret]
       #   raise "Client requires :account => <account name> and :secret => <secret>"
       # end
-      
+
       @account = options[:account]
       @secret = options[:secret]
-      
+
       @secure = options[:secure] != false # must pass false for insecure
-      
+
       @document_id_method = options[:document_id_method]
     end
 
 
     ## Account management
-    
+
     # Retrieve the API secret for an +account+, using the +password+ (uses HTTPS)
     def self.get_secret(account, password)
       auth = Request.new(:path => "#{PATH}/auth")
@@ -167,7 +167,7 @@ module Cloudquery
       end
       params = Rack::Utils.build_query({"name" => account, "password" => password})
       curl.http_post(params)
-      
+
       if curl.response_code == 200
         curl.url = Request.new(:path => "#{PATH}/#{API_PATHS[:account]}/#{account}").url
         curl.http_get
@@ -182,7 +182,7 @@ module Cloudquery
     def get_account
       send_request get(account_path)
     end
-    
+
     # Update the account document.
     #
     # Use this method to change the API secret:
@@ -191,7 +191,7 @@ module Cloudquery
       body = JSON.generate(account_doc)
       send_request put(account_path, body)
     end
-    
+
     # Delete the account.
     #
     # ==== BEWARE: THIS WILL ACTUALLY DELETE YOUR ACCOUNT.
@@ -201,7 +201,7 @@ module Cloudquery
 
 
     ## Schema management
-    
+
     # Add a schema to the account. +xml+ can be a +String+
     # or +File+-like (responds to <tt>:read</tt>)
     def add_schema(xml)
@@ -209,7 +209,7 @@ module Cloudquery
       request = post(build_path(API_PATHS[:schema]), body)
       send_request(request, CONTENT_TYPES[:xml])
     end
-    
+
     # Delete a schema from the account, by name
     def delete_schema(schema_name)
       send_request delete(build_path(
@@ -217,38 +217,38 @@ module Cloudquery
         Rack::Utils.escape("xfs.schema.name:\"#{schema_name}\"")
       ))
     end
-    
+
     # Get the schemas for the account.
     #
     # NOTE: returned format is not the same as accepted for input
     def get_schemas
       send_request get(build_path(API_PATHS[:schema]))
     end
-    
+
 
     ## Index management
-    
+
     # Add one or more indexes to the account, by name or id
     def add_indexes(*indexes)
       body = JSON.generate(indexes.flatten)
       send_request post(build_path(API_PATHS[:indexes]), body)
     end
-    
+
     # Delete one or more indexes from the account, by name or id
     # <tt>indexes = '*'</tt> will delete all indexes
     def delete_indexes(*indexes)
       indexes = url_pipe_join(indexes)
       send_request delete(build_path(API_PATHS[:indexes], indexes))
     end
-    
+
     # Get the indexes from the account. Returns a list of ids
     def get_indexes
       send_request get(build_path(API_PATHS[:indexes]))
     end
-    
+
 
     ## Document management
-    
+
     # Add documents to the specified +index+
     #
     # <tt>index = name</tt> or +id+, <tt>docs = {}</tt> or +Array+ of <tt>{}</tt>.
@@ -264,9 +264,9 @@ module Cloudquery
       )
       send_request request
     end
-    
+
     # Update documents in the specified +index+
-    
+
     # <tt>index = name</tt> or +id+, <tt>docs = {}</tt> or +Array+ of <tt>{}</tt>.
     #
     # Documents lacking the key <tt>'#.id'</tt> will be created.
@@ -280,7 +280,7 @@ module Cloudquery
       )
       send_request request
     end
-    
+
     # Modify documents in the +index+ matching +query+
     #
     # <tt>modifications = {...data...}</tt> to update all matching
@@ -295,7 +295,7 @@ module Cloudquery
       )
       send_request request
     end
-    
+
     # Delete documents in the +index+ matching +query+
     #
     #   query => defaults to '*'
@@ -317,9 +317,9 @@ module Cloudquery
       )
       send_request request
     end
-    
+
     # Get documents matching +query+
-    # 
+    #
     #   query => defaults to '*'
     #   index => may be an id, index name, or Array of ids or names.
     #
@@ -337,14 +337,14 @@ module Cloudquery
       if fields = options.delete(:fields)
         fields = url_pipe_join(fields)
       end
-      
+
       if options[:sort]
         options[:sort] = Array(options[:sort]).flatten.join(',')
       end
-      
+
       request = get(
-        build_path(API_PATHS[:documents], 
-          url_pipe_join(index), 
+        build_path(API_PATHS[:documents],
+          url_pipe_join(index),
           url_pipe_join(schemas),
           url_pipe_join(query),
           fields
@@ -353,9 +353,9 @@ module Cloudquery
       )
       send_request request
     end
-    
+
     # Count documents matching +query+
-    # 
+    #
     #   query => defaults to '*'
     #   index => may be an id, index name, or Array of ids or names.
     #
@@ -366,36 +366,36 @@ module Cloudquery
     def count_documents(index, query, *schemas)
       get_documents(index, query, {:fields => '@count'}, *schemas)
     end
-    
+
     private
     def build_path(*path_elements)
       path_elements.flatten.compact.unshift(PATH).join('/')
     end
-    
+
     def account_path
       build_path(API_PATHS[:account], @account)
     end
-    
+
     def build_request(options={})
       Request.new default_request_params.merge(options)
     end
-    
+
     def get(path, params={})
       build_request(:method => 'GET', :path => path, :params => params)
     end
-    
+
     def delete(path, params={})
       build_request(:method => 'DELETE', :path => path, :params => params)
     end
-    
+
     def post(path, doc, params={})
       build_request(:method => 'POST', :path => path, :body => doc, :params => params)
     end
-    
+
     def put(path, doc, params={})
       build_request(:method => 'PUT', :path => path, :body => doc, :params => params)
     end
-    
+
     def default_request_params
       {
         :account => @account,
@@ -403,7 +403,7 @@ module Cloudquery
         :scheme => @secure ? 'https' : 'http',
       }
     end
-    
+
     def send_request(request, content_type=nil)
       response = execute_request(request.method, request.url, request.headers, request.body, content_type)
       status_code = response.first
@@ -436,7 +436,7 @@ module Cloudquery
       when 'PUT'
         curl.http_put(body)
       end
-      
+
       [curl.response_code, curl.header_str, curl.body_str]
     end
 
@@ -448,7 +448,7 @@ module Cloudquery
         Rack::Utils.escape(arr.join('|'))
       end
     end
-    
+
     def identify_documents(docs)
       [docs] if docs.is_a?(Hash)
       if @document_id_method
