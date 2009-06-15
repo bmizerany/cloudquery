@@ -27,7 +27,7 @@ module Cloudquery
 
 
   SIGNING_METHOD = "SHA1".freeze
-  COOKIE_JAR = ".cookies.lwp".freeze
+  COOKIE_JAR = (ENV["COOKIE_JAR"] || ".cookies.lwp").freeze
 
   class Request
     attr_accessor :method, :headers, :scheme, :host, :port, :path, :params, :body
